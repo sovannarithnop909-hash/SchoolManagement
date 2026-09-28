@@ -1,0 +1,342 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  profilePhoto String?   @map("profile_photo") @db.MediumText
+  student      Student?
+  teacher      Teacher?
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  ACCOUNTANT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model AcademicYear {
+  id        Int      @id @default(autoincrement())
+  name      String
+  startDate DateTime @db.Date @map("start_date")
+  endDate   DateTime @db.Date @map("end_date")
+  status    AcademicStatus @default(ACTIVE)
+  classes   Class[]
+  fees      Fee[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("academic_years")
+}
+
+enum AcademicStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Teacher {
+  id           Int       @id @default(autoincrement())
+  userId       Int?      @unique @map("user_id")
+  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teacherId    String?   @unique @map("teacher_id")
+  firstName    String    @map("first_name")
+  lastName     String    @map("last_name")
+  gender       Gender
+  dob          DateTime? @db.Date
+  email        String
+  phone        String?
+  address      String?
+  subject      String
+  hireDate     DateTime  @db.Date @map("hire_date")
+  profilePhoto String?   @map("profile_photo")
+  status       TeacherStatus @default(ACTIVE)
+  classes      Class[]
+  subjects     Subject[]
+  createdAt    DateTime @default(now()) @map("created_at")
+  attendanceRecords TeacherAttendance[]
+
+  @@map("teachers")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum TeacherStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Class {
+  id              Int           @id @default(autoincrement())
+  classId         String?       @unique @map("class_id")
+  name            String
+  grade           String
+  room            String
+  teacherId       Int?          @map("teacher_id")
+  teacher         Teacher?      @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  academicYearId  Int?          @map("academic_year_id")
+  academicYear    AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  status          ClassStatus   @default(ACTIVE)
+  students        Student[]
+  subjects        Subject[]
+  attendances     Attendance[]
+  exams           Exam[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+
+  @@map("classes")
+}
+
+enum ClassStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Student {
+  id             Int       @id @default(autoincrement())
+  userId         Int?      @unique @map("user_id")
+  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  studentId      String?   @unique @map("student_id")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  gender         Gender
+  dob            DateTime? @db.Date
+  email          String    @unique
+  phone          String?
+  address        String?
+  parentName     String?   @map("parent_name")
+  parentPhone    String?   @map("parent_phone")
+  classId        Int?      @map("class_id")
+  class          Class?    @relation(fields: [classId], references: [id], onDelete: SetNull)
+  enrollmentDate DateTime  @db.Date @map("enrollment_date")
+  profilePhoto   String?   @map("profile_photo")
+  status         StudentStatus @default(ACTIVE)
+  grades         Grade[]
+  attendance     Attendance[]
+  fees           Fee[]
+  payments       Payment[]
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@map("students")
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Subject {
+  id        Int      @id @default(autoincrement())
+  subjectId  String?  @unique @map("subject_id")
+  name      String
+  code      String
+  teacherId Int?     @map("teacher_id")
+  teacher   Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  classId   Int?     @map("class_id")
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  credits   Int      @default(1)
+  status    SubjectStatus @default(ACTIVE)
+  grades    Grade[]
+  attendances Attendance[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("subjects")
+}
+
+enum SubjectStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  examId    String?  @unique @map("exam_id")
+  name      String
+  type      ExamType
+  classId   Int?     @map("class_id")
+  class     Class?   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  startDate DateTime @db.Date @map("start_date")
+  endDate   DateTime @db.Date @map("end_date")
+  status    ExamStatus @default(DRAFT)
+  grades    Grade[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("exams")
+}
+
+enum ExamType {
+  MIDTERM
+  FINAL
+  MONTHLY
+  QUIZ
+}
+
+enum ExamStatus {
+  DRAFT
+  OPEN
+  CLOSED
+}
+
+model Grade {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectId Int      @map("subject_id")
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  examId    Int      @map("exam_id")
+  exam      Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  score     Decimal  @db.Decimal(5,2)
+  grade     String
+  remark    String?
+  percentage Decimal @db.Decimal(5,2)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("grades")
+}
+
+model Attendance {
+  id        Int      @id @default(autoincrement())
+  studentId Int      @map("student_id")
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId   Int      @map("class_id")
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId Int?     @map("subject_id")
+  subject   Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  attendanceDate DateTime @db.Date @map("attendance_date")
+  status    AttendanceStatus
+  remark    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("attendance")
+}
+
+model TeacherAttendance {
+  id             Int      @id @default(autoincrement())
+  teacherId      Int      @map("teacher_id")
+  teacher        Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  attendanceDate DateTime @db.Date @map("attendance_date")
+  checkInAt      DateTime @default(now()) @map("check_in_at")
+  status         AttendanceStatus @default(PRESENT)
+
+  @@unique([teacherId, attendanceDate])
+  @@map("teacher_attendance")
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model Fee {
+  id             Int      @id @default(autoincrement())
+  feeId          String?  @unique @map("fee_id")
+  studentId      Int      @map("student_id")
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeType        FeeType  @map("fee_type")
+  amount         Decimal  @db.Decimal(10,2)
+  dueDate        DateTime @db.Date @map("due_date")
+  academicYearId Int?     @map("academic_year_id")
+  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  status         FeeStatus @default(PENDING)
+  createdAt      DateTime @default(now()) @map("created_at")
+  payments       Payment[]
+
+  @@map("fees")
+}
+
+enum FeeType {
+  TUITION
+  REGISTRATION
+  LIBRARY
+  TRANSPORTATION
+  UNIFORM
+  OTHER
+}
+
+enum FeeStatus {
+  PENDING
+  PAID
+  PARTIAL
+  OVERDUE
+}
+
+model Payment {
+  id             Int      @id @default(autoincrement())
+  paymentId      String?  @unique @map("payment_id")
+  studentId      Int      @map("student_id")
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount         Decimal  @db.Decimal(10,2)
+  paymentDate    DateTime @db.Date @map("payment_date")
+  paymentMethod  PaymentMethod @map("payment_method")
+  referenceNumber String?  @map("reference_number")
+  status         PaymentStatus @default(SUCCESS)
+  createdAt      DateTime @default(now()) @map("created_at")
+  feeRecordId    Int?     @map("fee_record_id")
+  feeRecord      Fee?     @relation(fields: [feeRecordId], references: [id], onDelete: SetNull)
+
+  @@map("payments")
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ONLINE_PAYMENT
+}
+
+enum PaymentStatus {
+  SUCCESS
+  PENDING
+  FAILED
+}
+
+model Notice {
+  id             Int      @id @default(autoincrement())
+  title          String
+  description    String @db.Text
+  author         String
+  targetAudience TargetAudience @map("target_audience")
+  publishDate    DateTime @db.Date @map("publish_date")
+  expiryDate     DateTime? @db.Date @map("expiry_date")
+  status         NoticeStatus @default(DRAFT)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("notices")
+}
+
+enum TargetAudience {
+  EVERYONE
+  STUDENTS
+  TEACHERS
+  PARENTS
+  SPECIFIC_CLASS
+}
+
+enum NoticeStatus {
+  PUBLISHED
+  DRAFT
+  ARCHIVED
+}

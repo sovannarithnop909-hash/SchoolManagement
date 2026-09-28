@@ -1,0 +1,38 @@
+{
+  "name": "school-management-backend",
+  "version": "1.0.0",
+  "description": "School Management System backend API",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "prisma:generate": "prisma generate --schema=prisma/schema.prisma",
+    "db:push": "prisma db push --schema=prisma/schema.prisma",
+    "seed": "node prisma/seed.js",
+    "test": "node --check server.js"
+  },
+  "keywords": [
+    "school",
+    "management",
+    "express",
+    "prisma",
+    "mysql"
+  ],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.4",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.1",
+    "mysql2": "^3.24.4",
+    "nodemon": "^3.1.14",
+    "prisma": "^5.22.0"
+  }
+}
